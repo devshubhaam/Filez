@@ -1,0 +1,14 @@
+[[redirects]]
+  from = "/"
+  to = "/netlify/file.html"
+  status = 200
+
+[[redirects]]
+  from = "/file.html"
+  to = "/netlify/file.html"
+  status = 200
+
+[[redirects]]
+  from = "/*"
+  to = "/netlify/file.html"
+  status = 200
