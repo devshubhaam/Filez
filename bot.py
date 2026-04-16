@@ -7,7 +7,7 @@ import logging
 import asyncio
 from telegram.ext import (
     Application, CommandHandler, MessageHandler,
-    CallbackQueryHandler, filters, ConversationHandler
+    CallbackQueryHandler, filters,
 )
 from config import Config
 from handlers.start import start_handler
@@ -41,7 +41,7 @@ async def post_init(application: Application) -> None:
     logger.info("Bot initialized and scheduler started.")
 
 
-def main():
+async def main():
     config = Config()
     db = Database(config.MONGO_URI, config.DB_NAME)
 
@@ -87,8 +87,10 @@ def main():
     application.add_handler(CallbackQueryHandler(callback_handler))
 
     logger.info("Starting bot in polling mode...")
-    application.run_polling(allowed_updates=["message", "callback_query"])
+
+    # Python 3.14 compatible — run_polling manages its own event loop internally
+    await application.run_polling(allowed_updates=["message", "callback_query"])
 
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())
