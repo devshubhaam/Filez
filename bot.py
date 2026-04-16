@@ -10,7 +10,7 @@ from telegram.ext import (
     CallbackQueryHandler, filters, ConversationHandler
 )
 from config import Config
-from handlers.start import start_handler, verify_access_handler, ref_handler
+from handlers.start import start_handler
 from handlers.admin import (
     upload_handler, admin_stats_handler, ban_handler, unban_handler,
     broadcast_handler, set_force_join_handler, approve_payment_handler,
