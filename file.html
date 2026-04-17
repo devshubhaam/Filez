@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Get Your File</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #0d1117;
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      color: #e6edf3;
+    }
+
+    .card {
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 16px;
+      padding: 48px 40px;
+      max-width: 420px;
+      width: 90%;
+      text-align: center;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+    }
+
+    .icon {
+      font-size: 56px;
+      margin-bottom: 20px;
+    }
+
+    h1 {
+      font-size: 24px;
+      font-weight: 700;
+      margin-bottom: 10px;
+      color: #f0f6fc;
+    }
+
+    p {
+      color: #8b949e;
+      font-size: 15px;
+      line-height: 1.6;
+      margin-bottom: 32px;
+    }
+
+    .btn {
+      display: inline-block;
+      background: linear-gradient(135deg, #2ea043, #238636);
+      color: #ffffff;
+      text-decoration: none;
+      padding: 14px 36px;
+      border-radius: 10px;
+      font-size: 16px;
+      font-weight: 600;
+      transition: opacity 0.2s, transform 0.1s;
+      cursor: pointer;
+      border: none;
+      width: 100%;
+    }
+
+    .btn:hover { opacity: 0.9; transform: translateY(-1px); }
+    .btn:active { transform: translateY(0); }
+
+    .badge {
+      display: inline-block;
+      margin-top: 24px;
+      font-size: 12px;
+      color: #484f58;
+    }
+
+    #file-id {
+      font-family: monospace;
+      color: #58a6ff;
+      font-size: 13px;
+      margin-top: 8px;
+      word-break: break-all;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="icon">📁</div>
+    <h1>File Requested</h1>
+    <p>Your file is ready to be delivered via Telegram.<br/>Click the button below to receive it instantly.</p>
+    <div id="file-id"></div>
+    <br/>
+    <a id="get-btn" class="btn" href="#">🚀 Get File via Telegram</a>
+    <div class="badge">Powered by Telegram File Bot</div>
+  </div>
+
+  <script>
+    (function () {
+      // Extract ?id= from query string
+      const params = new URLSearchParams(window.location.search);
+      const fileId = params.get('id');
+
+      if (!fileId) {
+        document.querySelector('h1').textContent = 'Invalid Link';
+        document.querySelector('p').textContent = 'No file ID found in this link.';
+        document.getElementById('get-btn').style.display = 'none';
+        return;
+      }
+
+      // Display file id
+      document.getElementById('file-id').textContent = 'ID: ' + fileId;
+
+      // IMPORTANT: Replace BOT_USERNAME with your actual bot username
+      const BOT_USERNAME = 'filepe_bot'; // ← Change this
+      const deepLink = 'https://t.me/' + BOT_USERNAME + '?start=file_' + fileId;
+
+      document.getElementById('get-btn').href = deepLink;
+    })();
+  </script>
+</body>
+</html>
