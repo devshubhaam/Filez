@@ -41,10 +41,7 @@ async def post_init(application: Application) -> None:
     logger.info("Bot initialized and scheduler started.")
 
 
-async def main():
-    config = Config()
-    db = Database(config.MONGO_URI, config.DB_NAME)
-
+def build_application(config: Config, db) -> Application:
     application = (
         Application.builder()
         .token(config.BOT_TOKEN)
@@ -52,14 +49,11 @@ async def main():
         .build()
     )
 
-    # Store config and db in bot_data
     application.bot_data["config"] = config
     application.bot_data["db"] = db
 
-    # ── Start / deep-link handlers ──────────────────────────────────────
     application.add_handler(CommandHandler("start", start_handler))
 
-    # ── Admin commands ──────────────────────────────────────────────────
     application.add_handler(
         MessageHandler(
             filters.Chat(config.ADMIN_IDS) & (
@@ -76,21 +70,35 @@ async def main():
     application.add_handler(CommandHandler("setforcejoin", set_force_join_handler))
     application.add_handler(CommandHandler("delfile", delete_file_handler))
 
-    # ── User commands ───────────────────────────────────────────────────
     application.add_handler(CommandHandler("buy", buy_handler))
     application.add_handler(CommandHandler("paid", paid_handler))
     application.add_handler(CommandHandler("status", status_handler))
     application.add_handler(CommandHandler("referral", referral_handler))
     application.add_handler(CommandHandler("help", help_handler))
 
-    # ── Inline button callbacks ─────────────────────────────────────────
     application.add_handler(CallbackQueryHandler(callback_handler))
 
-    logger.info("Starting bot in polling mode...")
+    return application
 
-    # Python 3.14 compatible — run_polling manages its own event loop internally
-    await application.run_polling(allowed_updates=["message", "callback_query"])
+
+async def run_bot():
+    config = Config()
+    db = Database(config.MONGO_URI, config.DB_NAME)
+    application = build_application(config, db)
+
+    logger.info("Starting bot...")
+
+    async with application:
+        await application.start()
+        await application.updater.start_polling(
+            allowed_updates=["message", "callback_query"]
+        )
+        # Keep running until interrupted
+        await asyncio.Event().wait()
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    try:
+        asyncio.run(run_bot())
+    except KeyboardInterrupt:
+        logger.info("Bot stopped.")
