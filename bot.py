@@ -1,10 +1,12 @@
 """
 Telegram File Sharing Bot - Main Entry Point
-Production-ready, MongoDB-backed, shortlink-monetized
+Runs Flask (for Render port binding) + bot polling together.
 """
 
 import logging
 import asyncio
+import threading
+from flask import Flask
 from telegram.ext import (
     Application, CommandHandler, MessageHandler,
     CallbackQueryHandler, filters,
@@ -34,14 +36,35 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+# ── Flask app (keeps Render Web Service alive) ───────────────────────────────
+flask_app = Flask(__name__)
+
+@flask_app.route("/")
+def health():
+    return "Bot is running!", 200
+
+@flask_app.route("/health")
+def healthcheck():
+    return {"status": "ok"}, 200
+
+
+def run_flask():
+    import os
+    port = int(os.environ.get("PORT", 8080))
+    flask_app.run(host="0.0.0.0", port=port)
+
+
+# ── Bot ───────────────────────────────────────────────────────────────────────
 
 async def post_init(application: Application) -> None:
-    """Post-init hook: start background scheduler."""
     await start_scheduler(application)
     logger.info("Bot initialized and scheduler started.")
 
 
-def build_application(config: Config, db) -> Application:
+async def run_bot():
+    config = Config()
+    db = Database(config.MONGO_URI, config.DB_NAME)
+
     application = (
         Application.builder()
         .token(config.BOT_TOKEN)
@@ -78,26 +101,23 @@ def build_application(config: Config, db) -> Application:
 
     application.add_handler(CallbackQueryHandler(callback_handler))
 
-    return application
-
-
-async def run_bot():
-    config = Config()
-    db = Database(config.MONGO_URI, config.DB_NAME)
-    application = build_application(config, db)
-
-    logger.info("Starting bot...")
+    logger.info("Starting bot polling...")
 
     async with application:
         await application.start()
         await application.updater.start_polling(
             allowed_updates=["message", "callback_query"]
         )
-        # Keep running until interrupted
         await asyncio.Event().wait()
 
 
 if __name__ == "__main__":
+    # Start Flask in a background thread
+    flask_thread = threading.Thread(target=run_flask, daemon=True)
+    flask_thread.start()
+    logger.info("Flask server started.")
+
+    # Run bot in main thread
     try:
         asyncio.run(run_bot())
     except KeyboardInterrupt:
