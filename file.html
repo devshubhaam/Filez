@@ -21,99 +21,159 @@
       background: #161b22;
       border: 1px solid #30363d;
       border-radius: 16px;
-      padding: 48px 40px;
-      max-width: 420px;
-      width: 90%;
+      padding: 40px 32px;
+      max-width: 440px;
+      width: 92%;
       text-align: center;
       box-shadow: 0 8px 32px rgba(0,0,0,0.4);
     }
 
-    .icon {
-      font-size: 56px;
-      margin-bottom: 20px;
-    }
+    .icon { font-size: 52px; margin-bottom: 16px; }
 
-    h1 {
-      font-size: 24px;
-      font-weight: 700;
-      margin-bottom: 10px;
-      color: #f0f6fc;
-    }
+    h1 { font-size: 22px; font-weight: 700; margin-bottom: 8px; color: #f0f6fc; }
 
-    p {
-      color: #8b949e;
-      font-size: 15px;
-      line-height: 1.6;
-      margin-bottom: 32px;
-    }
+    p { color: #8b949e; font-size: 14px; line-height: 1.6; margin-bottom: 28px; }
 
-    .btn {
-      display: inline-block;
-      background: linear-gradient(135deg, #2ea043, #238636);
-      color: #ffffff;
+    #file-id { font-family: monospace; color: #58a6ff; font-size: 12px; margin-bottom: 24px; }
+
+    /* Primary button */
+    .btn-primary {
+      display: block;
+      width: 100%;
+      background: linear-gradient(135deg, #238636, #2ea043);
+      color: #fff;
       text-decoration: none;
-      padding: 14px 36px;
+      padding: 14px;
       border-radius: 10px;
       font-size: 16px;
       font-weight: 600;
+      margin-bottom: 20px;
       transition: opacity 0.2s, transform 0.1s;
-      cursor: pointer;
-      border: none;
-      width: 100%;
     }
+    .btn-primary:hover { opacity: 0.88; transform: translateY(-1px); }
 
-    .btn:hover { opacity: 0.9; transform: translateY(-1px); }
-    .btn:active { transform: translateY(0); }
-
-    .badge {
-      display: inline-block;
-      margin-top: 24px;
-      font-size: 12px;
+    /* Divider */
+    .divider {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 16px;
       color: #484f58;
+      font-size: 12px;
+    }
+    .divider::before, .divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: #30363d;
     }
 
-    #file-id {
-      font-family: monospace;
-      color: #58a6ff;
-      font-size: 13px;
-      margin-top: 8px;
-      word-break: break-all;
+    /* Alternate server buttons */
+    .servers { display: flex; flex-direction: column; gap: 10px; }
+
+    .btn-server {
+      display: block;
+      width: 100%;
+      background: #21262d;
+      border: 1px solid #30363d;
+      color: #c9d1d9;
+      text-decoration: none;
+      padding: 11px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 500;
+      transition: background 0.15s, border-color 0.15s;
     }
+    .btn-server:hover { background: #30363d; border-color: #58a6ff; color: #58a6ff; }
+
+    .badge { margin-top: 24px; font-size: 11px; color: #484f58; }
   </style>
 </head>
 <body>
-  <div class="card">
-    <div class="icon">📁</div>
-    <h1>File Requested</h1>
-    <p>Your file is ready to be delivered via Telegram.<br/>Click the button below to receive it instantly.</p>
-    <div id="file-id"></div>
-    <br/>
-    <a id="get-btn" class="btn" href="#">🚀 Get File via Telegram</a>
-    <div class="badge">Powered by Telegram File Bot</div>
-  </div>
+<div class="card">
+  <div class="icon">📁</div>
+  <h1>File Ready</h1>
+  <p>Your file will be delivered via Telegram.<br/>Click a server below to receive it instantly.</p>
+  <div id="file-id"></div>
 
-  <script>
-    (function () {
-      // Extract ?id= from query string
-      const params = new URLSearchParams(window.location.search);
-      const fileId = params.get('id');
+  <!-- Auto-selected primary server (rotated) -->
+  <a id="btn-auto" class="btn-primary" href="#">🚀 Get File — Auto Server</a>
 
-      if (!fileId) {
-        document.querySelector('h1').textContent = 'Invalid Link';
-        document.querySelector('p').textContent = 'No file ID found in this link.';
-        document.getElementById('get-btn').style.display = 'none';
-        return;
-      }
+  <div class="divider">or choose a server manually</div>
 
-      // Display file id
-      document.getElementById('file-id').textContent = 'ID: ' + fileId;
+  <!-- Manual fallback servers -->
+  <div class="servers" id="server-list"></div>
 
-      // IMPORTANT: Replace BOT_USERNAME with your actual bot username
-      const BOT_USERNAME = 'filepe_bot'; // ← Change this
-      const deepLink = 'https://t.me/' + BOT_USERNAME + '?start=file_' + fileId;
+  <div class="badge">If one server fails, try another ↑</div>
+</div>
 
-      document.getElementById('get-btn').href = deepLink;
-    })();
-  </script>
+<script>
+(function () {
+  // ─────────────────────────────────────────────────────────────────
+  // CONFIG — add/remove bot usernames here (without @)
+  // ─────────────────────────────────────────────────────────────────
+  const BOTS = [
+    { username: "filepe_bot", label: "⚡ Fast Server"       },
+    { username: "YourBot2", label: "🔥 Backup Server"     },
+    { username: "YourBot3", label: "🌐 Alternate Server"  },
+    // Add more bots here as needed
+  ];
+
+  const SERVER_LABELS = BOTS.map(b => b.label);
+
+  // ─────────────────────────────────────────────────────────────────
+  // Helpers
+  // ─────────────────────────────────────────────────────────────────
+  const params   = new URLSearchParams(window.location.search);
+  const fileId   = params.get('id');
+  const visitKey = 'visit_' + fileId;
+
+  if (!fileId) {
+    document.querySelector('h1').textContent = 'Invalid Link';
+    document.querySelector('p').textContent  = 'No file ID found in this link.';
+    document.getElementById('btn-auto').style.display = 'none';
+    return;
+  }
+
+  document.getElementById('file-id').textContent = 'ID: ' + fileId;
+
+  // ── Bot rotation logic ──────────────────────────────────────────
+  // On each visit, advance to next bot so distribution is even.
+  // Uses localStorage visit counter to rotate deterministically.
+  function getRotatedBotIndex() {
+    if (BOTS.length === 0) return 0;
+    let count = 0;
+    try { count = parseInt(localStorage.getItem(visitKey) || '0', 10); } catch(e) {}
+    const idx = count % BOTS.length;
+    try { localStorage.setItem(visitKey, (count + 1).toString()); } catch(e) {}
+    return idx;
+  }
+
+  function buildLink(username) {
+    return 'https://t.me/' + username + '?start=file_' + fileId;
+  }
+
+  // ── Primary button — auto rotated ───────────────────────────────
+  if (BOTS.length > 0) {
+    const autoIdx = getRotatedBotIndex();
+    const autoBot = BOTS[autoIdx];
+    document.getElementById('btn-auto').href        = buildLink(autoBot.username);
+    document.getElementById('btn-auto').textContent = '🚀 Get File — ' + autoBot.label.replace(/^[^\s]+\s/, '');
+  } else {
+    document.getElementById('btn-auto').style.display = 'none';
+  }
+
+  // ── Manual fallback server buttons ──────────────────────────────
+  const serverList = document.getElementById('server-list');
+  BOTS.forEach(function(bot) {
+    const a = document.createElement('a');
+    a.href      = buildLink(bot.username);
+    a.className = 'btn-server';
+    a.textContent = bot.label;
+    serverList.appendChild(a);
+  });
+
+})();
+</script>
 </body>
 </html>
